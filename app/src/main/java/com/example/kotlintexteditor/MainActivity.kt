@@ -55,6 +55,12 @@ class MainActivity : AppCompatActivity() {
         val btnMenu = findViewById<ImageButton>(R.id.btnMenu)
         btnMenu.setOnClickListener { showPopupMenu(btnMenu) }
 
+        intent.getStringExtra("OPEN_FILE_NAME")?.let { fileName ->
+            currentFileName = fileName
+            openInternalFile(fileName)
+        }
+
+
         val languages = arrayOf("Kotlin", "Java", "Python")
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, languages)
         languageSpinner.adapter = adapter
