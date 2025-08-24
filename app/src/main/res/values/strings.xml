@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">TextEditor</string>
+    <string-array name="languages">
+        <item>Kotlin</item>
+        <item>Python</item>
+        <item>Java</item>
+    </string-array>
+</resources>
