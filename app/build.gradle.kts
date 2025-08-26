@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.example.kotlintexteditor"
-    compileSdk = 35
+    compileSdk = 35 // ✅ Use 34 if you don't have API 35 installed
 
     defaultConfig {
         applicationId = "com.example.kotlintexteditor"
@@ -26,24 +26,33 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     kotlinOptions {
         jvmTarget = "11"
+    }
+
+    buildFeatures {
+        viewBinding = true
     }
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.legacy.support.v4)
+
+    // ✅ Fixed Gson dependency
+    implementation("com.google.code.gson:gson:2.10.1")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    implementation("com.google.code.gson:gson:2.10.1")
 }
