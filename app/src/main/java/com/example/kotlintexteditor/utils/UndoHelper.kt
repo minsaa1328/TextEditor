@@ -1,21 +1,23 @@
-package com.example.kotlintexteditor.utils
-
-
 import android.text.Editable
 import android.text.TextWatcher
 import android.widget.EditText
-import java.util.*
+import java.util.Stack
 
 class UndoHelper(private val editText: EditText) {
 
-    private val undoStack = Stack<String>()
-    private val redoStack = Stack<String>()
+    private val undoStack = Stack<EditAction>()
+    private val redoStack = Stack<EditAction>()
     private var isEditing = false
+    var isProgrammaticChange = false
+
+    data class EditAction(val text: CharSequence, val selectionStart: Int, val selectionEnd: Int)
 
     private val watcher = object : TextWatcher {
         override fun afterTextChanged(s: Editable?) {
-            if (!isEditing) {
-                undoStack.push(s.toString())
+            if (!isEditing && !isProgrammaticChange && s != null) {
+                // Store plain text without spans for undo/redo
+                val plainText = s.toString()
+                undoStack.push(EditAction(plainText, editText.selectionStart, editText.selectionEnd))
                 redoStack.clear()
             }
         }
@@ -24,7 +26,7 @@ class UndoHelper(private val editText: EditText) {
     }
 
     fun start() {
-        undoStack.push(editText.text.toString()) // initial state
+        undoStack.push(EditAction(editText.text.toString(), editText.selectionStart, editText.selectionEnd))
         editText.addTextChangedListener(watcher)
     }
 
@@ -36,9 +38,9 @@ class UndoHelper(private val editText: EditText) {
         if (undoStack.size > 1) {
             isEditing = true
             val current = undoStack.pop()
-            redoStack.push(current)
-            editText.setText(undoStack.peek())
-            editText.setSelection(undoStack.peek().length)
+            redoStack.push(EditAction(editText.text.toString(), editText.selectionStart, editText.selectionEnd))
+            val previous = undoStack.peek()
+            setTextProgrammatically(previous.text, previous.selectionStart, previous.selectionEnd)
             isEditing = false
         }
     }
@@ -47,10 +49,19 @@ class UndoHelper(private val editText: EditText) {
         if (redoStack.isNotEmpty()) {
             isEditing = true
             val next = redoStack.pop()
-            undoStack.push(next)
-            editText.setText(next)
-            editText.setSelection(next.length)
+            undoStack.push(EditAction(editText.text.toString(), editText.selectionStart, editText.selectionEnd))
+            setTextProgrammatically(next.text, next.selectionStart, next.selectionEnd)
             isEditing = false
         }
+    }
+
+    fun setTextProgrammatically(text: CharSequence, selectionStart: Int, selectionEnd: Int) {
+        isProgrammaticChange = true
+        editText.setText(text)
+        editText.setSelection(
+            selectionStart.coerceIn(0, text.length),
+            selectionEnd.coerceIn(0, text.length)
+        )
+        isProgrammaticChange = false
     }
 }

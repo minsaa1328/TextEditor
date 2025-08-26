@@ -1,6 +1,10 @@
 package com.example.kotlintexteditor
 
+import UndoHelper
 import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
@@ -8,16 +12,21 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.text.Editable
+import android.text.SpannableString
 import android.text.TextWatcher
+import android.util.Log
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
+import androidx.core.content.ContextCompat
 import com.example.kotlintexteditor.model.SyntaxRule
 import com.example.kotlintexteditor.utils.*
+import kotlinx.coroutines.*
 import java.io.*
 
 class MainActivity : AppCompatActivity() {
@@ -35,31 +44,62 @@ class MainActivity : AppCompatActivity() {
     private lateinit var fileListAdapter: ArrayAdapter<String>
     private var currentSyntaxRule: SyntaxRule? = null
 
+    private val handler = Handler(Looper.getMainLooper())
+    private val debounceRunnable = Runnable {
+        highlightEditor()
+        updateStatus()
+        updateLineNumbers()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         editor = findViewById(R.id.editor)
         lineNumbers = findViewById(R.id.lineNumbers)
-        statusBar = findViewById(R.id.statusBar)
+        statusBar = findViewById<TextView>(R.id.statusCounts) ?: run {
+            Log.e("MainActivity", "statusCounts view not found with ID R.id.statusCounts")
+            throw IllegalStateException("statusCounts TextView not found in layout")
+        }
         languageSpinner = findViewById(R.id.languageSpinner)
 
         undoHelper = UndoHelper(editor)
         undoHelper.start()
 
-        findViewById<ImageButton>(R.id.btnNew).setOnClickListener { newFile() }
-        findViewById<ImageButton>(R.id.btnOpen).setOnClickListener { showFilePickerDialog() }
+        // Simple focus
+        editor.requestFocus()
+
+        // Focus and show keyboard
+        fun focusEditor() {
+            editor.requestFocus()
+            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.showSoftInput(editor, InputMethodManager.SHOW_IMPLICIT)
+        }
+
+        // Set up tab switching
+        findViewById<Button>(R.id.tabCompiling).setOnClickListener {
+            switchTab(true)
+        }
+
+        findViewById<Button>(R.id.tabOutput).setOnClickListener {
+            switchTab(false)
+        }
+
+        findViewById<EditText>(R.id.editor).setOnClickListener {
+            Log.d("EditText", "Editor clicked")
+        }
+        // findViewById<ImageButton>(R.id.btnNew).setOnClickListener { newFile() }
+        //findViewById<ImageButton>(R.id.btnOpen).setOnClickListener { showFilePickerDialog() }
         findViewById<ImageButton>(R.id.btnSave).setOnClickListener { saveFile() }
         findViewById<ImageButton>(R.id.btnCompile).setOnClickListener { compileCode() }
 
         val btnMenu = findViewById<ImageButton>(R.id.btnMenu)
         btnMenu.setOnClickListener { showPopupMenu(btnMenu) }
 
-        intent.getStringExtra("OPEN_FILE_NAME")?.let { fileName ->
-            currentFileName = fileName
-            openInternalFile(fileName)
-        }
-
+        // Set up additional buttons from the layout
+        findViewById<Button>(R.id.btnUndo).setOnClickListener { undoHelper.undo() }
+        findViewById<Button>(R.id.btnRedo).setOnClickListener { undoHelper.redo() }
+        findViewById<Button>(R.id.btnReplace).setOnClickListener { showFindReplaceDialog() }
 
         val languages = arrayOf("Kotlin", "Java", "Python")
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, languages)
@@ -77,40 +117,126 @@ class MainActivity : AppCompatActivity() {
         }
 
         editor.addTextChangedListener(object : TextWatcher {
+            private var previousText = editor.text.toString()
+
             override fun afterTextChanged(s: Editable?) {
-                highlightEditor()
-                updateStatus()
-                updateLineNumbers()
+                if (undoHelper.isProgrammaticChange) return
+
+                val currentText = s?.toString() ?: ""
+                if (currentText != previousText) {
+                    handler.removeCallbacks(debounceRunnable)
+                    handler.postDelayed(debounceRunnable, 300)
+                    previousText = currentText
+                }
             }
 
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
+
+
+        // Set up copy/paste buttons
+        findViewById<Button>(R.id.btnCopy).setOnClickListener {
+            val selection = editor.selectionStart to editor.selectionEnd
+            if (selection.first != selection.second) {
+                val selectedText = editor.text.substring(selection.first, selection.second)
+                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                val clip = ClipData.newPlainText("code", selectedText)
+                clipboard.setPrimaryClip(clip)
+                Toast.makeText(this, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "No text selected", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        findViewById<Button>(R.id.btnPaste).setOnClickListener {
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            if (clipboard.hasPrimaryClip()) {
+                val clip = clipboard.primaryClip
+                if (clip != null && clip.itemCount > 0) {
+                    val text = clip.getItemAt(0).text.toString()
+                    val start = editor.selectionStart
+                    val end = editor.selectionEnd
+                    editor.text.replace(start, end, text)
+                    editor.setSelection(start + text.length)
+                }
+            } else {
+                Toast.makeText(this, "Clipboard is empty", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        findViewById<Button>(R.id.btnCut).setOnClickListener {
+            val selection = editor.selectionStart to editor.selectionEnd
+            if (selection.first != selection.second) {
+                val selectedText = editor.text.substring(selection.first, selection.second)
+                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                val clip = ClipData.newPlainText("code", selectedText)
+                clipboard.setPrimaryClip(clip)
+
+                // Remove the selected text
+                editor.text.delete(selection.first, selection.second)
+                Toast.makeText(this, "Cut to clipboard", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "No text selected", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun compileCode() {
-        val cleanCode = editor.text
-            .toString()
-            .replace(Regex("\n+--- Compiling ---.*", RegexOption.DOT_MATCHES_ALL), "")
-            .replace(Regex("\n+--- Compiler Output ---.*", RegexOption.DOT_MATCHES_ALL), "")
-            .replace(Regex("\n+--- Runtime Output ---.*", RegexOption.DOT_MATCHES_ALL), "")
-            .trim()
+        val cleanCode = editor.text.toString().trim()
 
-        editor.setText(cleanCode)
-        editor.append("\n\n--- Compiling ---")
+        // Get references to the output views in the bottom panel
+        val compileLog = findViewById<TextView>(R.id.compileLog)
+        val runtimeOutput = findViewById<TextView>(R.id.runtimeOutput)
 
-        ADBCompiler.compile(this, cleanCode) { compilerOutput, runtimeOutput ->
+        // Clear previous output and show compiling message
+        compileLog.text = "--- Compiling ---"
+        runtimeOutput.text = ""
+
+        // Switch to the compiling tab
+        switchTab(true)
+
+        ADBCompiler.compile(this, cleanCode) { compilerOutput, runtimeOutputText ->
             runOnUiThread {
-                editor.append("\n\n--- Compiler Output ---\n$compilerOutput")
-                editor.append("\n\n--- Runtime Output ---\n$runtimeOutput")
+                // Update compiler output tab
+                compileLog.text = "--- Compiling ---\n$compilerOutput"
+
+                // Update runtime output tab
+                runtimeOutput.text = if (runtimeOutputText.isNotEmpty()) {
+                    runtimeOutputText
+                } else {
+                    "No runtime output"
+                }
+
                 Toast.makeText(this, "Compilation and execution complete", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
+    private fun switchTab(showCompiling: Boolean) {
+        val compileLog = findViewById<TextView>(R.id.compileLog)
+        val runtimeOutput = findViewById<TextView>(R.id.runtimeOutput)
+        val tabCompiling = findViewById<Button>(R.id.tabCompiling)
+        val tabOutput = findViewById<Button>(R.id.tabOutput)
 
-
-
+        if (showCompiling) {
+            compileLog.visibility = View.VISIBLE
+            runtimeOutput.visibility = View.GONE
+            tabCompiling.isSelected = true
+            tabOutput.isSelected = false
+            // You might want to change background colors to indicate active tab
+            tabCompiling.setBackgroundColor(ContextCompat.getColor(this, R.color.bg_card_dark))
+            tabOutput.setBackgroundColor(ContextCompat.getColor(this, R.color.bg_appbar_dark))
+        } else {
+            compileLog.visibility = View.GONE
+            runtimeOutput.visibility = View.VISIBLE
+            tabCompiling.isSelected = false
+            tabOutput.isSelected = true
+            // Change background colors for active tab indication
+            tabCompiling.setBackgroundColor(ContextCompat.getColor(this, R.color.bg_appbar_dark))
+            tabOutput.setBackgroundColor(ContextCompat.getColor(this, R.color.bg_card_dark))
+        }
+    }
 
     private fun highlightEditor() {
         if (isHighlighting) return
@@ -118,17 +244,33 @@ class MainActivity : AppCompatActivity() {
         isHighlighting = true
 
         val code = editor.text.toString()
-        val highlighted = if (currentSyntaxRule == null) {
-            SyntaxHighlighter.highlightKotlinCode(code)
-        } else {
-            GenericSyntaxHighlighter.highlight(code, currentSyntaxRule!!)
+        val selectionStart = editor.selectionStart
+        val selectionEnd = editor.selectionEnd
+
+        // Store current text for comparison (without spans)
+        val currentPlainText = editor.text.toString()
+
+        CoroutineScope(Dispatchers.Default).launch {
+            val highlighted = try {
+                if (currentSyntaxRule == null) {
+                    SyntaxHighlighter.highlightKotlinCode(code)
+                } else {
+                    GenericSyntaxHighlighter.highlight(code, currentSyntaxRule!!)
+                }
+            } catch (e: Exception) {
+                Log.e("SyntaxHighlight", "Error during highlighting", e)
+                SpannableString(code) // Fallback to plain text
+            }
+
+            withContext(Dispatchers.Main) {
+                // Only update if the plain text content hasn't changed during highlighting
+                val currentTextAfterDelay = editor.text.toString()
+                if (currentPlainText == currentTextAfterDelay) {
+                    undoHelper.setTextProgrammatically(highlighted, selectionStart, selectionEnd)
+                }
+                isHighlighting = false
+            }
         }
-
-        val cursorPos = editor.selectionStart
-        editor.setText(highlighted)
-        editor.setSelection(minOf(cursorPos, highlighted.length))
-
-        isHighlighting = false
     }
 
     private fun updateLineNumbers() {
@@ -139,6 +281,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateStatus() {
+        if (!::statusBar.isInitialized) {
+            Log.w("MainActivity", "statusCounts not initialized, skipping update")
+            return
+        }
         val wordCount = editor.text.split("\\s+".toRegex()).filter { it.isNotEmpty() }.size
         val charCount = editor.text.length
         statusBar.text = "$currentFileName | Words: $wordCount | Chars: $charCount"
@@ -158,6 +304,9 @@ class MainActivity : AppCompatActivity() {
             writer.write(editor.text.toString())
             writer.close()
             Toast.makeText(this, "File saved: $currentFileName", Toast.LENGTH_SHORT).show()
+            updateStatus() // Update status to reflect the saved file name
+            // Update the top title to reflect the saved file name
+            setTitle("$currentFileName Saved")
         } catch (e: IOException) {
             Toast.makeText(this, "Error saving file", Toast.LENGTH_SHORT).show()
         }

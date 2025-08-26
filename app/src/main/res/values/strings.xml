@@ -1,8 +1,30 @@
 <resources>
-    <string name="app_name">TextEditor</string>
+    <string name="app_name">Kotlin Text Editor</string>
+    <string name="back">Back</string>
+    <string name="save">Save</string>
+    <string name="compile">Compile</string>
+    <string name="search">Search</string>
+    <string name="menu">Menu</string>
+    <string name="saved">Saved</string>
+
+    <string name="undo">Undo</string>
+    <string name="redo">Redo</string>
+    <string name="cut">Cut</string>
+    <string name="copy">Copy</string>
+    <string name="paste">Paste</string>
+    <string name="format">Format</string>
+    <string name="replace">Replace</string>
+    <string name="code_editor">code editor</string>
+    <string name="select_language">Select Language</string>
+
+
+    <string name="tab_compiling">Compiling</string>
+    <string name="tab_output">Runtime Output</string>
+
     <string-array name="languages">
+        <item>@string/select_language</item>
         <item>Kotlin</item>
-        <item>Python</item>
         <item>Java</item>
+        <item>Python</item>
     </string-array>
 </resources>

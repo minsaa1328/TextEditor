@@ -1,128 +1,450 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/mainLayout"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#F5F5F5"
-    android:padding="8dp">
+    android:background="@color/bg_root_dark"
+    android:backgroundTint="@color/bg_appbar_dark">
 
-    <!-- Language Selector (moved above buttons) -->
-    <Spinner
-        android:id="@+id/languageSpinner"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_margin="8dp"
-        android:background="#EEEEEE"
-        android:padding="10dp"
-        android:spinnerMode="dropdown" />
-
-    <!-- Toolbar (moved below the spinner) -->
+    <!-- TOP APP BAR -->
     <LinearLayout
-        android:id="@+id/fileToolbar"
+        android:id="@+id/topBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:padding="4dp">
+        android:layout_marginTop="70dp"
+        android:background="@color/bg_appbar_dark"
+        android:elevation="6dp"
+        android:orientation="vertical">
 
-        <ImageButton
-            android:id="@+id/btnNew"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@android:drawable/ic_menu_add"
-            android:contentDescription="New"
-            android:background="?attr/selectableItemBackgroundBorderless" />
+        <!-- Main toolbar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp">
 
-        <ImageButton
-            android:id="@+id/btnOpen"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@android:drawable/ic_menu_view"
-            android:contentDescription="Open"
-            android:background="?attr/selectableItemBackgroundBorderless" />
+            <ImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_btn_round"
+                android:contentDescription="@string/back"
+                android:padding="8dp"
+                app:srcCompat="@android:drawable/ic_media_previous" />
 
-        <ImageButton
-            android:id="@+id/btnSave"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@android:drawable/ic_menu_save"
-            android:contentDescription="Save"
-            android:background="?attr/selectableItemBackgroundBorderless" />
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
 
-        <ImageButton
-            android:id="@+id/btnCompile"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@android:drawable/ic_media_play"
-            android:contentDescription="Compile"
-            android:background="?attr/selectableItemBackgroundBorderless" />
+                <TextView
+                    android:id="@+id/tvTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Main.kt"
+                    android:textColor="@color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
-        <ImageButton
-            android:id="@+id/btnMenu"
-            android:layout_width="40dp"
+                <TextView
+                    android:id="@+id/tvSaved"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/saved"
+                    android:textColor="@color/green_ok"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/btnSave"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_btn_round"
+                android:contentDescription="@string/save"
+                android:padding="8dp"
+                app:srcCompat="@android:drawable/ic_menu_save" />
+
+            <ImageButton
+                android:id="@+id/btnCompile"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_btn_primary"
+                android:contentDescription="@string/compile"
+                android:padding="8dp"
+                app:srcCompat="@android:drawable/ic_media_play" />
+
+            <ImageButton
+                android:id="@+id/btnSearch"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_btn_round"
+                android:contentDescription="@string/search"
+                android:padding="8dp"
+                app:srcCompat="@android:drawable/ic_menu_search" />
+
+            <ImageButton
+                android:id="@+id/btnMenu"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_btn_round"
+                android:contentDescription="@string/menu"
+                android:padding="8dp"
+                app:srcCompat="@android:drawable/ic_menu_more" />
+        </LinearLayout>
+
+        <!-- Secondary action strip -->
+        <HorizontalScrollView
+            android:layout_width="match_parent"
             android:layout_height="40dp"
-            android:src="@android:drawable/ic_menu_more"
-            android:contentDescription="More Options"
-            android:background="?attr/selectableItemBackgroundBorderless" />
+            android:background="@color/bg_strip_dark"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp">
+
+                <Button
+                    android:id="@+id/btnUndo"
+                    style="@style/ChipButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:drawableStart="@drawable/ic_undo"
+                    android:drawablePadding="6dp"
+                    android:text="@string/undo" />
+
+                <Button
+                    android:id="@+id/btnRedo"
+                    style="@style/ChipButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:drawableStart="@drawable/ic_redo"
+                    android:drawablePadding="6dp"
+                    android:text="@string/redo" />
+
+                <Button
+                    android:id="@+id/btnCut"
+                    style="@style/ChipButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:drawableStart="@drawable/ic_cut"
+                    android:drawablePadding="6dp"
+                    android:text="@string/cut" />
+
+                <Button
+                    android:id="@+id/btnCopy"
+                    style="@style/ChipButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:drawableStart="@drawable/ic_copy"
+                    android:drawablePadding="6dp"
+                    android:text="@string/copy" />
+
+                <Button
+                    android:id="@+id/btnPaste"
+                    style="@style/ChipButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:drawableStart="@drawable/ic_paste"
+                    android:drawablePadding="6dp"
+                    android:text="@string/paste" />
+
+                <Button
+                    android:id="@+id/btnFormat"
+                    style="@style/ChipButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:text="@string/format" />
+
+                <Button
+                    android:id="@+id/btnReplace"
+                    style="@style/ChipButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:drawableStart="@drawable/ic_find_replace"
+                    android:drawablePadding="6dp"
+                    android:text="@string/replace" />
+            </LinearLayout>
+        </HorizontalScrollView>
     </LinearLayout>
 
-    <!-- Code Editor with Line Numbers -->
-    <HorizontalScrollView
+    <!-- MAIN SCROLLER -->
+    <LinearLayout
+        android:id="@+id/mainContainer"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:fillViewport="true"
-        android:scrollbars="horizontal">
+        android:layout_height="match_parent"
+        android:layout_marginTop="0dp"
+        android:orientation="vertical">
+
+        <!-- Editor card -->
+
+        <!-- Utility row -->
+        <LinearLayout
+            android:id="@+id/editorCard"
+            android:layout_width="match_parent"
+            android:layout_height="376dp"
+            android:layout_margin="8dp"
+            android:layout_weight="1"
+            android:background="@color/bg_card_dark"
+            android:orientation="vertical"
+            android:padding="8dp">
+
+            <!-- Language + filename row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvFileChip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="28dp"
+                    android:background="@drawable/bg_chip"
+                    android:paddingLeft="10dp"
+                    android:paddingTop="4dp"
+                    android:paddingRight="10dp"
+                    android:paddingBottom="4dp"
+                    android:text="Main.kt"
+                    android:textColor="@color/white"
+                    android:textSize="12sp" />
+
+                <Spinner
+                    android:id="@+id/languageSpinner"
+                    android:layout_width="wrap_content"
+                    android:layout_height="28dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_chip"
+                    android:backgroundTint="#837E7E"
+                    android:entries="@array/languages"
+                    android:foregroundTint="#EFE3E3"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:prompt="@string/select_language" />
+            </LinearLayout>
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginTop="130dp"
+                android:layout_weight="1"
+                android:descendantFocusability="beforeDescendants"
+                android:overScrollMode="never"
+                android:paddingTop="8dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/lineNumbers"
+                        android:layout_width="48dp"
+                        android:layout_height="match_parent"
+                        android:background="@color/bg_gutter_dark"
+                        android:gravity="top|end"
+                        android:lineSpacingExtra="4dp"
+                        android:paddingTop="12dp"
+                        android:paddingEnd="10dp"
+                        android:text="1"
+                        android:textColor="@color/ln_grey"
+                        android:textSize="12sp" />
+
+                    <androidx.core.widget.NestedScrollView
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:fillViewport="true">
+
+                        <EditText
+                            android:id="@+id/editor"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:background="@android:color/transparent"
+                            android:clickable="true"
+                            android:contentDescription="@string/code_editor"
+                            android:elevation="2dp"
+                            android:focusable="true"
+                            android:focusableInTouchMode="true"
+                            android:fontFamily="monospace"
+                            android:gravity="top|start"
+                            android:imeOptions="flagNoExtractUi"
+                            android:importantForAutofill="no"
+                            android:inputType="textMultiLine|textNoSuggestions"
+                            android:overScrollMode="ifContentScrolls"
+                            android:paddingLeft="6dp"
+                            android:paddingTop="12dp"
+                            android:paddingRight="6dp"
+                            android:paddingBottom="10dp"
+                            android:scrollbars="vertical"
+                            android:textColor="@color/white"
+                            android:textSize="13sp" />
+                    </androidx.core.widget.NestedScrollView>
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <!-- Code area with line numbers -->
+        </LinearLayout>
 
         <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:orientation="horizontal">
+            android:id="@+id/utilityRow"
+            android:layout_width="match_parent"
+            android:layout_height="28dp"
+            android:background="@color/bg_strip_dark"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp">
 
-            <!-- Line Numbers -->
             <TextView
-                android:id="@+id/lineNumbers"
-                android:layout_width="40dp"
-                android:layout_height="match_parent"
-                android:padding="10dp"
-                android:text="1"
-                android:textColor="#888888"
-                android:gravity="top|end"
-                android:fontFamily="monospace"
-                android:background="#EEEEEE" />
+                android:id="@+id/statusLanguage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Language: Kotlin"
+                android:textColor="@color/text_muted"
+                android:textSize="11sp" />
 
-            <!-- Editor -->
-            <ScrollView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
 
-                <EditText
-                    android:id="@+id/editor"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textColor="#000000"
-                    android:background="#FFFFFF"
-                    android:gravity="top|start"
-                    android:inputType="textMultiLine|textNoSuggestions"
-                    android:textSize="14sp"
-                    android:padding="10dp"
-                    android:fontFamily="monospace"
-                    android:scrollbars="vertical"
-                    android:minLines="20" />
-            </ScrollView>
+            <TextView
+                android:id="@+id/statusCursor"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ln:1, Col:1"
+                android:textColor="@color/text_muted"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/statusIndent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="Spaces: 4"
+                android:textColor="@color/text_muted"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/statusBuild"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="Build: -"
+                android:textColor="@color/green_ok"
+                android:textSize="11sp" />
         </LinearLayout>
-    </HorizontalScrollView>
 
-    <!-- Status Bar -->
-    <TextView
-        android:id="@+id/statusBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="untitled.txt | Words: 0 | Chars: 0"
-        android:textColor="#2E7D32"
-        android:textSize="12sp"
-        android:padding="5dp"
-        android:background="#E0E0E0" />
+        <!-- Bottom panel with tabs -->
+        <LinearLayout
+            android:id="@+id/bottomPanel"
+            android:layout_width="match_parent"
+            android:layout_height="160dp"
+            android:background="@color/bg_card_dark"
+            android:orientation="vertical">
 
-</LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:background="@color/bg_appbar_dark"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/tabCompiling"
+                    style="@style/TabButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:text="@string/tab_compiling" />
+
+                <Button
+                    android:id="@+id/tabOutput"
+                    style="@style/TabButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:text="@string/tab_output" />
+            </LinearLayout>
+
+            <FrameLayout
+                android:id="@+id/tabContent"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:padding="8dp">
+
+                <TextView
+                    android:id="@+id/compileLog"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:fontFamily="monospace"
+                    android:text=""
+                    android:textColor="@color/text_body"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/runtimeOutput"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:fontFamily="monospace"
+                    android:text=""
+                    android:textColor="@color/text_body"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
+            </FrameLayout>
+        </LinearLayout>
+
+        <!-- Bottom status bar -->
+        <LinearLayout
+            android:id="@+id/bottomStatus"
+            android:layout_width="match_parent"
+            android:layout_height="28dp"
+            android:background="@color/bg_root_dark"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/bg_status_dot_ok" />
+
+                <TextView
+                    android:id="@+id/statusText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="Ready"
+                    android:textColor="@color/text_body"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/statusCounts"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 words • 0 chars"
+                android:textColor="@color/text_muted"
+                android:textSize="11sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
