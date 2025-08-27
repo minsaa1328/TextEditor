@@ -38,7 +38,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statusBar: TextView
     private lateinit var languageSpinner: Spinner
     private lateinit var undoHelper: UndoHelper
-
+    private lateinit var tvFileName: TextView
     private var currentFileName = "untitled.txt"
     private val OPEN_FILE_REQUEST_CODE = 100
     private lateinit var fileListAdapter: ArrayAdapter<String>
@@ -69,6 +69,7 @@ class MainActivity : AppCompatActivity() {
         // Simple focus
         editor.requestFocus()
 
+        tvFileName = findViewById(R.id.tvTitle)
         // Focus and show keyboard
         fun focusEditor() {
             editor.requestFocus()
@@ -84,6 +85,22 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.tabOutput).setOnClickListener {
             switchTab(false)
         }
+
+
+        // Check if we're opening an existing file from HomeActivity
+        val fileName = intent.getStringExtra("OPEN_FILE_NAME")
+        if (!fileName.isNullOrEmpty()) {
+            currentFileName = fileName
+            openInternalFile(fileName)
+        } else {
+            // If no file specified, check if we have a saved state
+            if (savedInstanceState != null) {
+                currentFileName = savedInstanceState.getString("currentFileName", "untitled.txt")
+            }
+            updateStatus()
+        }
+
+
 
         findViewById<EditText>(R.id.editor).setOnClickListener {
             Log.d("EditText", "Editor clicked")
@@ -132,6 +149,26 @@ class MainActivity : AppCompatActivity() {
 
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        }
+
+        )
+
+        editor.addTextChangedListener(object : TextWatcher {
+            private var previousText = editor.text.toString()
+
+            override fun afterTextChanged(s: Editable?) {
+                if (undoHelper.isProgrammaticChange) return
+
+                val currentText = s?.toString() ?: ""
+                if (currentText != previousText) {
+                    handler.removeCallbacks(debounceRunnable)
+                    handler.postDelayed(debounceRunnable, 300)
+                    previousText = currentText
+                }
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
 
 
@@ -163,6 +200,18 @@ class MainActivity : AppCompatActivity() {
             } else {
                 Toast.makeText(this, "Clipboard is empty", Toast.LENGTH_SHORT).show()
             }
+        }
+
+
+        val btnBack = findViewById<ImageButton>(R.id.btnBack)
+        btnBack.setOnClickListener {
+            // Always go to HomeActivity
+            val intent = Intent(this, HomeActivity::class.java).apply {
+                // If Home is already in the stack, reuse it
+                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            }
+            startActivity(intent)
+            finish() // remove this editor screen from the back stack
         }
 
         findViewById<Button>(R.id.btnCut).setOnClickListener {
@@ -282,14 +331,19 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateStatus() {
         if (!::statusBar.isInitialized) {
-            Log.w("MainActivity", "statusCounts not initialized, skipping update")
+            Log.w("MainActivity", "statusBar not initialized, skipping update")
             return
         }
-        val wordCount = editor.text.split("\\s+".toRegex()).filter { it.isNotEmpty() }.size
-        val charCount = editor.text.length
-        statusBar.text = "$currentFileName | Words: $wordCount | Chars: $charCount"
-    }
 
+        val textContent = editor.text.toString()
+        val wordCount = textContent.split("\\s+".toRegex())
+            .filter { it.isNotEmpty() }
+            .size
+        val charCount = textContent.length
+
+        statusBar.text = "$currentFileName | Words: $wordCount | Chars: $charCount"
+        tvFileName.text = currentFileName
+    }
     private fun newFile() {
         editor.setText("")
         currentFileName = "untitled.txt"
@@ -496,5 +550,10 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         saveFile()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString("currentFileName", currentFileName)
     }
 }
