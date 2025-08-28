@@ -1,0 +1,4 @@
+----------------- Compiler Output -----------------
+compile.kt:2:28: error: syntax error: Expecting '}'.
+println("Hello WoldHiWold")
+                           ^
