@@ -19,7 +19,7 @@
         <!-- Launcher activity -->
         <activity
             android:name=".LaunchActivity"
-            android:label="CodeNest"
+            android:label="LaunchActivity"
             android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
             android:launchMode="singleTask"
             android:exported="true">
