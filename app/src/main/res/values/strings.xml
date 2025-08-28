@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Kotlin Text Editor</string>
+    <string name="app_name">CodeNest</string>
     <string name="back">Back</string>
     <string name="save">Save</string>
     <string name="compile">Compile</string>
